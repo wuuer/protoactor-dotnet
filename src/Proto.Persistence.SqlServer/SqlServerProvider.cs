@@ -68,15 +68,15 @@ public class SqlServerProvider : IProvider
             $@"INSERT INTO [{_tableSchema}].[{_tableSnapshots}] (Id, ActorName, SnapshotIndex, SnapshotData) VALUES (@Id, @ActorName, @SnapshotIndex, @SnapshotData)";
     }
 
-    public Task DeleteEventsAsync(string actorName, long inclusiveToIndex) =>
-        ExecuteNonQueryAsync(
+    public async Task DeleteEventsAsync(string actorName, long inclusiveToIndex) =>
+        await ExecuteNonQueryAsync(
             _sqlDeleteEvents,
             CreateParameter("ActorName", NVarChar, actorName),
             CreateParameter("EventIndex", BigInt, inclusiveToIndex)
         );
 
-    public Task DeleteSnapshotsAsync(string actorName, long inclusiveToIndex) =>
-        ExecuteNonQueryAsync(
+    public async Task DeleteSnapshotsAsync(string actorName, long inclusiveToIndex) =>
+        await ExecuteNonQueryAsync(
             _sqlDeleteSnapshots,
             CreateParameter("ActorName", NVarChar, actorName),
             CreateParameter("SnapshotIndex", BigInt, inclusiveToIndex)
@@ -118,9 +118,9 @@ public class SqlServerProvider : IProvider
         long snapshotIndex = 0;
         object snapshotData = null;
 
-        using var connection = new SqlConnection(_connectionString);
+        await using var connection = new SqlConnection(_connectionString);
 
-        using var command = new SqlCommand(_sqlReadSnapshot, connection);
+        await using var command = new SqlCommand(_sqlReadSnapshot, connection);
 
         await connection.OpenAsync().ConfigureAwait(false);
 
@@ -152,14 +152,14 @@ public class SqlServerProvider : IProvider
             CreateParameter("EventData", NVarChar, JsonConvert.SerializeObject(item.EventData, AllTypeSettings))
         ).ConfigureAwait(false);
 
-        return index++;
+        return index + 1;
     }
 
-    public Task PersistSnapshotAsync(string actorName, long index, object snapshot)
+    public async Task PersistSnapshotAsync(string actorName, long index, object snapshot)
     {
         var item = new Snapshot(actorName, index, snapshot);
 
-        return ExecuteNonQueryAsync(
+        await ExecuteNonQueryAsync(
             _sqlSaveSnapshot,
             CreateParameter("Id", NVarChar, item.Id),
             CreateParameter("ActorName", NVarChar, item.ActorName),
@@ -232,13 +232,13 @@ public class SqlServerProvider : IProvider
 
     private async Task ExecuteNonQueryAsync(string sql, params SqlParameter[] parameters)
     {
-        using var connection = new SqlConnection(_connectionString);
+        await using var connection = new SqlConnection(_connectionString);
 
-        using var command = new SqlCommand(sql, connection);
+        await using var command = new SqlCommand(sql, connection);
 
         await connection.OpenAsync().ConfigureAwait(false);
 
-        using var tx = connection.BeginTransaction();
+        await using var tx = connection.BeginTransaction();
 
         command.Transaction = tx;
 
