@@ -58,7 +58,8 @@ public class SqlServerProvider : IProvider
         _sqlReadEvents = $@"SELECT EventIndex, EventData FROM [{_tableSchema}].[{_tableEvents}] WHERE ActorName = @ActorName AND EventIndex >= @IndexStart AND EventIndex <= @IndexEnd ORDER BY EventIndex ASC";
 
         _sqlReadSnapshot =
-            $@"SELECT TOP 1 SnapshotIndex, SnapshotData FROM [{_tableSchema}].[{_tableSnapshots}] WHERE ActorName = @ActorName ORDER BY SnapshotIndex DESC";
+            $@"SELECT SnapshotIndex, SnapshotData FROM [{_tableSchema}].[{_tableSnapshots}]
+               WHERE ActorName = @ActorName AND SnapshotIndex = (SELECT MAX(SnapshotIndex) FROM [{_tableSchema}].[{_tableSnapshots}] WHERE ActorName = @ActorName)";
 
         _sqlSaveEvents =
             $@"INSERT INTO [{_tableSchema}].[{_tableEvents}] (Id, ActorName, EventIndex, EventData) VALUES (@Id, @ActorName, @EventIndex, @EventData)";
