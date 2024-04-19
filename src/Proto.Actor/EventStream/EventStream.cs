@@ -8,6 +8,9 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -24,7 +27,9 @@ namespace Proto;
 [PublicAPI]
 public class EventStream : EventStream<object>
 {
+#pragma warning disable CS0618 // Type or member is obsolete
     private readonly ILogger _logger = Log.CreateLogger<EventStream>();
+#pragma warning restore CS0618 // Type or member is obsolete
 
     internal EventStream(ActorSystem system)
     {
@@ -82,8 +87,9 @@ public class EventStream<T>
     /// </summary>
     /// <param name="action">Synchronous message handler</param>
     /// <param name="dispatcher">Optional: the dispatcher, will use <see cref="Dispatchers.SynchronousDispatcher" /> by default</param>
+    /// <param name="caller">passed by the compiler</param>
     /// <returns>A new subscription that can be used to unsubscribe</returns>
-    public EventStreamSubscription<T> Subscribe(Action<T> action, IDispatcher? dispatcher = null)
+    public EventStreamSubscription<T> Subscribe(Action<T> action, IDispatcher? dispatcher = null, [CallerMemberName] string? caller = null)
     {
         var sub = new EventStreamSubscription<T>(
             this,
@@ -94,7 +100,7 @@ public class EventStream<T>
 
                 return Task.CompletedTask;
             }
-        );
+        ,caller ?? "Unknown");
 
         _subscriptions.TryAdd(sub.Id, sub);
 
@@ -107,13 +113,13 @@ public class EventStream<T>
     /// <param name="channel">a Channel which receives the event</param>
     /// <param name="dispatcher">Optional: the dispatcher, will use <see cref="Dispatchers.SynchronousDispatcher" /> by default</param>
     /// <returns>A new subscription that can be used to unsubscribe</returns>
-    public EventStreamSubscription<T> Subscribe(Channel<T> channel, IDispatcher? dispatcher = null)
+    public EventStreamSubscription<T> Subscribe(Channel<T> channel, IDispatcher? dispatcher = null, [CallerMemberName] string? caller = null)
     {
         var sub = new EventStreamSubscription<T>(
             this,
             dispatcher ?? Dispatchers.SynchronousDispatcher,
             async x => { await channel.Writer.WriteAsync(x).ConfigureAwait(false); }
-        );
+            ,caller ?? "Unknown");
 
         _subscriptions.TryAdd(sub.Id, sub);
 
@@ -126,7 +132,7 @@ public class EventStream<T>
     /// <param name="channel">a Channel which receives the event</param>
     /// <param name="dispatcher">Optional: the dispatcher, will use <see cref="Dispatchers.SynchronousDispatcher" /> by default</param>
     /// <returns>A new subscription that can be used to unsubscribe</returns>
-    public EventStreamSubscription<T> Subscribe<TMsg>(Channel<TMsg> channel, IDispatcher? dispatcher = null) where TMsg:T
+    public EventStreamSubscription<T> Subscribe<TMsg>(Channel<TMsg> channel, IDispatcher? dispatcher = null, [CallerMemberName] string? caller = null) where TMsg:T
     {
         var sub = new EventStreamSubscription<T>(
             this,
@@ -138,22 +144,8 @@ public class EventStream<T>
                     await channel.Writer.WriteAsync(tc).ConfigureAwait(false);
                 }
             }
-        );
+            ,caller ?? "Unknown");
 
-        _subscriptions.TryAdd(sub.Id, sub);
-
-        return sub;
-    }
-
-    /// <summary>
-    ///     Subscribe to messages with an asynchronous handler
-    /// </summary>
-    /// <param name="action">Asynchronous message handler</param>
-    /// <param name="dispatcher">Optional: the dispatcher, will use <see cref="Dispatchers.SynchronousDispatcher" /> by default</param>
-    /// <returns>A new subscription that can be used to unsubscribe</returns>
-    public EventStreamSubscription<T> Subscribe(Func<T, Task> action, IDispatcher? dispatcher = null)
-    {
-        var sub = new EventStreamSubscription<T>(this, dispatcher ?? Dispatchers.SynchronousDispatcher, action);
         _subscriptions.TryAdd(sub.Id, sub);
 
         return sub;
@@ -165,7 +157,7 @@ public class EventStream<T>
     /// <param name="action">Synchronous message handler</param>
     /// <param name="dispatcher">Optional: the dispatcher, will use <see cref="Dispatchers.SynchronousDispatcher" /> by default</param>
     /// <returns>A new subscription that can be used to unsubscribe</returns>
-    public EventStreamSubscription<T> Subscribe<TMsg>(Action<TMsg> action, IDispatcher? dispatcher = null)
+    public EventStreamSubscription<T> Subscribe<TMsg>(Action<TMsg> action, IDispatcher? dispatcher = null, [CallerMemberName] string? caller = null)
         where TMsg : T
     {
         var sub = new EventStreamSubscription<T>(
@@ -180,7 +172,7 @@ public class EventStream<T>
 
                 return Task.CompletedTask;
             }
-        );
+            ,caller ?? "Unknown");
 
         _subscriptions.TryAdd(sub.Id, sub);
 
@@ -198,7 +190,7 @@ public class EventStream<T>
         Func<TMsg, bool> predicate,
         Action<TMsg> action,
         IDispatcher? dispatcher = null
-    ) where TMsg : T
+        , [CallerMemberName] string? caller = null) where TMsg : T
     {
         var sub = new EventStreamSubscription<T>(
             this,
@@ -212,7 +204,7 @@ public class EventStream<T>
 
                 return Task.CompletedTask;
             }
-        );
+            ,caller ?? "Unknown");
 
         _subscriptions.TryAdd(sub.Id, sub);
 
@@ -227,6 +219,7 @@ public class EventStream<T>
     /// <returns>A new subscription that can be used to unsubscribe</returns>
     public EventStreamSubscription<T> Subscribe<TMsg>(ISenderContext context, params PID[] pids) where TMsg : T
     {
+        var caller = pids.First().ToDiagnosticString();
         var sub = new EventStreamSubscription<T>(
             this,
             Dispatchers.SynchronousDispatcher,
@@ -242,7 +235,7 @@ public class EventStream<T>
 
                 return Task.CompletedTask;
             }
-        );
+            ,caller ?? "Unknown");
 
         _subscriptions.TryAdd(sub.Id, sub);
 
@@ -254,15 +247,16 @@ public class EventStream<T>
     /// </summary>
     /// <param name="action">Asynchronous message handler</param>
     /// <param name="dispatcher">Optional: the dispatcher, will use <see cref="Dispatchers.SynchronousDispatcher" /> by default</param>
+    /// <param name="caller"></param>
     /// <returns>A new subscription that can be used to unsubscribe</returns>
-    public EventStreamSubscription<T> Subscribe<TMsg>(Func<TMsg, Task> action, IDispatcher? dispatcher = null)
+    public EventStreamSubscription<T> Subscribe<TMsg>(Func<TMsg, Task> action, IDispatcher? dispatcher = null, [CallerMemberName] string? caller = null)
         where TMsg : T
     {
         var sub = new EventStreamSubscription<T>(
             this,
             dispatcher ?? Dispatchers.SynchronousDispatcher,
             msg => msg is TMsg typed ? action(typed) : Task.CompletedTask
-        );
+            ,caller ?? "Unknown");
 
         _subscriptions.TryAdd(sub.Id, sub);
 
@@ -275,6 +269,10 @@ public class EventStream<T>
     /// <param name="msg">A message to publish</param>
     public void Publish(T msg)
     {
+        var parent = Activity.Current;
+        using var publishActivity = ActorSystem.ActivitySource.StartActivity($"{nameof(EventStream)} {msg?.GetType().Name??"null"}",ActivityKind.Internal,parent?.Id);
+        publishActivity?.AddTag(ProtoTags.MessageType, msg?.GetType().Name??"null");
+        
         foreach (var sub in _subscriptions.Values)
         {
             sub.Dispatcher.Schedule(
@@ -282,6 +280,10 @@ public class EventStream<T>
                 {
                     try
                     {
+                        using var subscriberActivity = ActorSystem.ActivitySource.StartActivity($"Subscriber {msg?.GetType().Name??"null"} {sub.Name}",ActivityKind.Internal,publishActivity?.Id);
+                        subscriberActivity?
+                            .AddTag(ProtoTags.MessageType, msg?.GetType().Name??"null")
+                            .AddTag(ProtoTags.EventSubscriber, sub.Name);
                         sub.Action(msg);
                     }
                     catch (Exception ex)
@@ -319,13 +321,16 @@ public class EventStreamSubscription<T>
 {
     private readonly EventStream<T> _eventStream;
 
-    public EventStreamSubscription(EventStream<T> eventStream, IDispatcher dispatcher, Func<T, Task> action)
+    public EventStreamSubscription(EventStream<T> eventStream, IDispatcher dispatcher, Func<T, Task> action, string name)
     {
         Id = Guid.NewGuid();
         _eventStream = eventStream;
         Dispatcher = dispatcher;
         Action = action;
+        Name = name;
     }
+
+    public string Name { get; }
 
     public Guid Id { get; }
     public IDispatcher Dispatcher { get; }
