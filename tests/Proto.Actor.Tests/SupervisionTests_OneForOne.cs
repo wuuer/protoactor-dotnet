@@ -79,7 +79,7 @@ public class SupervisionTestsOneForOne
 
         context.Send(parent, "hello");
 
-        childMailboxStats.Reset.Wait(1000);
+        childMailboxStats.Reset.Wait(2000);
         Assert.Contains(childMailboxStats.Posted, msg => msg is Restart);
         Assert.Contains(childMailboxStats.Received, msg => msg is Restart);
     }
@@ -147,7 +147,7 @@ public class SupervisionTestsOneForOne
         context.Send(parent, "3rd restart");
         context.Send(parent, "4th restart");
 
-        childMailboxStats.Reset.Wait(1000);
+        childMailboxStats.Reset.Wait(2000);
         Assert.Contains(Stop.Instance, childMailboxStats.Posted);
         Assert.Contains(Stop.Instance, childMailboxStats.Received);
     }

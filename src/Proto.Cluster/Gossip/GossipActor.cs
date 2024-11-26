@@ -1,6 +1,6 @@
 // -----------------------------------------------------------------------
 // <copyright file="GossipActor.cs" company="Asynkron AB">
-//      Copyright (C) 2015-2022 Asynkron AB All rights reserved
+//      Copyright (C) 2015-2024 Asynkron AB All rights reserved
 // </copyright>
 // -----------------------------------------------------------------------
 
@@ -43,6 +43,8 @@ public class GossipActor : IActor
          //   Logger.LogInformation("GossipActor Received {MessageType}", context.Message.GetMessageTypeName());
             var t = context.Message switch
             {
+                Started => OnStarted(context),
+                ReceiveTimeout => OnReceiveTimeout(context),
                 SetGossipStateKey setState => OnSetGossipStateKey(context, setState),
                 GetGossipStateRequest getState => OnGetGossipStateKey(context, getState),
                 GetGossipStateEntryRequest getState => OnGetGossipStateEntryKey(context, getState),
@@ -60,6 +62,18 @@ public class GossipActor : IActor
         {
             Logger.LogError(x, "GossipActor Failed {MessageType}", context.Message.GetMessageTypeName());
         }
+    }
+
+    private Task OnReceiveTimeout(IContext context)
+    {
+        Logger.LogCritical("GossipActor received timeout, report bug");
+        return Task.CompletedTask;
+    }
+
+    private Task OnStarted(IContext context)
+    {
+        context.SetReceiveTimeout(TimeSpan.FromSeconds(5));
+        return Task.CompletedTask;
     }
 
     private Task OnGetGossipStateEntryKey(IContext context, GetGossipStateEntryRequest getState)

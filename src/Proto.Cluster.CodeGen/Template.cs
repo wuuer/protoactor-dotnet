@@ -1,6 +1,6 @@
 ﻿// -----------------------------------------------------------------------
 // <copyright file="Template.cs" company="Asynkron AB">
-//      Copyright (C) 2015-2022 Asynkron AB All rights reserved
+//      Copyright (C) 2015-2024 Asynkron AB All rights reserved
 // </copyright>
 // -----------------------------------------------------------------------
 
@@ -62,7 +62,7 @@ namespace {{CsNamespace}}
             }
             catch (Exception x)
             {
-                onError(x.ToString());
+                OnError(x);
             }
         }
         {{/each}}
@@ -70,6 +70,11 @@ namespace {{CsNamespace}}
         {{#each Methods}}
         public abstract Task{{#if UseReturn}}<{{OutputName}}>{{/if}} {{Name}}({{SingleParameterDefinition}});
         {{/each}}
+
+        public virtual void OnError(Exception ex)
+        { 
+            Context!.Respond(new global::Proto.Cluster.GrainErrorResponse { Err = ex.ToString() });
+        }
     }
 
     public class {{Name}}Client

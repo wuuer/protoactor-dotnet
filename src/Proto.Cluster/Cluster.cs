@@ -1,6 +1,6 @@
 ﻿// -----------------------------------------------------------------------
 // <copyright file="Cluster.cs" company="Asynkron AB">
-//      Copyright (C) 2015-2022 Asynkron AB All rights reserved
+//      Copyright (C) 2015-2024 Asynkron AB All rights reserved
 // </copyright>
 // -----------------------------------------------------------------------
 
@@ -137,11 +137,11 @@ public class Cluster : IActorSystemExtension<Cluster>
     /// </summary>
     public MemberList MemberList { get; private set; } = null!;
 
-    internal IIdentityLookup IdentityLookup { get; set; } = null!;
+    public IIdentityLookup IdentityLookup { get; set; } = null!;
+
+    public PidCache PidCache { get; }
 
     internal IClusterProvider Provider { get; set; } = null!;
-
-    internal PidCache PidCache { get; }
 
     private void SubscribeToTopologyEvents() =>
         System.EventStream.Subscribe<ClusterTopology>(e =>

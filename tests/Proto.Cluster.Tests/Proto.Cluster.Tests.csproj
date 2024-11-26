@@ -2,7 +2,7 @@
     <PropertyGroup>
         <NoWarn>8981</NoWarn>
         <LangVersion>10</LangVersion>
-        <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
+        <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
     </PropertyGroup>
     <ItemGroup>
         <ProjectReference Include="..\..\src\Proto.Cluster.Consul\Proto.Cluster.Consul.csproj" />
@@ -13,12 +13,12 @@
         <ProjectReference Include="..\..\src\Proto.Remote\Proto.Remote.csproj" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Grpc.Tools" Version="2.51.0" PrivateAssets="All" />
-        <PackageReference Include="IsExternalInit.System.Runtime.CompilerServices" Version="1.0.0" />
-        <PackageReference Include="OpenTelemetry.Exporter.Jaeger" Version="1.5.1" />
-        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.6.0" />
+        <PackageReference Include="Grpc.Tools" PrivateAssets="All" />
+        <PackageReference Include="IsExternalInit.System.Runtime.CompilerServices" />
+        <PackageReference Include="OpenTelemetry.Exporter.Jaeger" />
+        <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
 
-        <PackageReference Include="System.Interactive.Async" Version="6.0.1" />
+        <PackageReference Include="System.Interactive.Async" />
     </ItemGroup>
     <ItemGroup>
         <Protobuf Include="*.proto" />

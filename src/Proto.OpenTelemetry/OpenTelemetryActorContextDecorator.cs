@@ -105,6 +105,48 @@ internal class OpenTelemetryActorContextDecorator : ActorContextDecorator
         base.ReenterAfter(target, a2);
     }
 
+    public override void ReenterAfter(Task target, Action<Task> action)
+    {
+        var current = Activity.Current?.Context ?? default;
+        var message = base.Message!;
+        Action<Task> a2 = t =>
+        {
+            using var x = OpenTelemetryHelpers.BuildStartedActivity(current, Source, nameof(ReenterAfter), message,
+                _sendActivitySetup);
+            x?.SetTag(ProtoTags.ActionType, nameof(ReenterAfter));
+            action(t);
+        };
+        base.ReenterAfter(target, a2);
+    }
+
+    public override void ReenterAfter<T>(Task<T> target, Action<Task<T>> action)
+    {
+        var current = Activity.Current?.Context ?? default;
+        var message = base.Message!;
+        Action<Task<T>> a2 = t =>
+        {
+            using var x = OpenTelemetryHelpers.BuildStartedActivity(current, Source, nameof(ReenterAfter), message,
+                _sendActivitySetup);
+            x?.SetTag(ProtoTags.ActionType, nameof(ReenterAfter));
+            action(t);
+        };
+        base.ReenterAfter(target, a2);
+    }
+
+    public override void ReenterAfter(Task target, Func<Task, Task> action)
+    {
+        var current = Activity.Current?.Context ?? default;
+        var message = base.Message!;
+        Func<Task, Task> a2 = async t =>
+        {
+            using var x = OpenTelemetryHelpers.BuildStartedActivity(current, Source, nameof(ReenterAfter), message,
+                _sendActivitySetup);
+            x?.SetTag(ProtoTags.ActionType, nameof(ReenterAfter));
+            await action(t).ConfigureAwait(false);
+        };
+        base.ReenterAfter(target, a2);
+    }
+
     public override PID SpawnNamed(Props props, string name, Action<IContext>? callback = null) => 
         OpenTelemetryMethodsDecorators.SpawnNamed(Source,_spawnActivitySetup, () => base.SpawnNamed(props, name, callback),name, Actor.GetType().Name);
 }

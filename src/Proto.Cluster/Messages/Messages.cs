@@ -1,6 +1,6 @@
 ﻿// -----------------------------------------------------------------------
 // <copyright file="Messages.cs" company="Asynkron AB">
-//      Copyright (C) 2015-2022 Asynkron AB All rights reserved
+//      Copyright (C) 2015-2024 Asynkron AB All rights reserved
 // </copyright>
 // -----------------------------------------------------------------------
 
@@ -15,7 +15,7 @@ namespace Proto.Cluster;
 
 public sealed partial class ClusterIdentity : ICustomDiagnosticMessage
 {
-    internal PID? CachedPid { get; set; }
+    public PID? CachedPid { get; set; }
 
     public string ToDiagnosticString() => $"{Kind}/{Identity}";
 
